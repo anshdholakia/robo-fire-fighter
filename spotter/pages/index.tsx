@@ -16,6 +16,7 @@ import TranscriptionTable, {
 import Controls from "@/components/controls";
 import Button from "@/components/recording";
 import Input from "@/components/sendText";
+import Switch from "@/components/ui/playback";
 
 export default function Home() {
   return (
@@ -41,12 +42,9 @@ export default function Home() {
             <Controls />
           </CardContent>
         </Card>
-        <Card className="col-span-3">
+        <Card className="col-span-5">
           <CardHeader className="flex items-center justify-center">
-            <CardTitle>Audio Recording</CardTitle>
-            <CardDescription>
-              Send audio to Spot!
-            </CardDescription>
+            <CardTitle>Send audio to Spot!</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-center p-2">
@@ -55,6 +53,18 @@ export default function Home() {
             <div className="flex items-center justify-center p-2">
               <Input />
             </div>
+            
+          </CardContent>
+        </Card>
+        <Card className="col-span-5">
+          <CardHeader className="flex items-center justify-center">
+            <CardTitle>Listen in</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-center p-2">
+            <Switch />
+            </div>
+          
             
           </CardContent>
         </Card>
