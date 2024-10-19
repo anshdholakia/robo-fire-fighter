@@ -17,9 +17,9 @@ import Controls from "@/components/controls";
 
 export default function Home() {
   return (
-    <>
-      <div className="flex flex-wrap justify-between">
-        <Card className="flex-1 m-2 md:mr-1">
+    <div>
+      <div className="grid grid-cols-5 gap-2">
+        <Card className="col-span-3 ">
           <CardHeader>
             <CardTitle>Live Feed</CardTitle>
             <CardDescription>front-facing camera from Spot</CardDescription>
@@ -28,7 +28,7 @@ export default function Home() {
             <WebCam />
           </CardContent>
         </Card>
-        <Card className="flex-1 m-2 md:ml-1">
+        <Card className="col-span-2">
           <CardHeader>
             <CardTitle>Controls</CardTitle>
             <CardDescription>
@@ -39,8 +39,21 @@ export default function Home() {
             <Controls />
           </CardContent>
         </Card>
+        <Card className="col-span-5">
+          <CardHeader>
+            <CardTitle>Audio Recording</CardTitle>
+            <CardDescription>
+              Send audio to Spot!
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div>
+              
+            </div>
+          </CardContent>
+        </Card>
       </div>
-      <Card className="mx-2 mt-.5">
+      {/* <Card className="mx-2 mt-.5">
         <CardHeader>
           <CardTitle>Live Feed</CardTitle>
           <CardDescription>
@@ -52,7 +65,7 @@ export default function Home() {
             <TranscriptionTable />
           </ScrollArea>
         </CardContent>
-      </Card>
-    </>
+      </Card> */}
+    </div>
   );
 }
