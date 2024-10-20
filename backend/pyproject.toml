@@ -12,8 +12,9 @@ opencv-python = "^4.8.1.78"
 python-dotenv = "^1.0.0"
 pyaudio = "^0.2.13"
 gtts = "^2.4.0"
-pygame = "^2.5.2"
+pygame = "2.6.1"
 openai = "1.23.2"
+pydub = "0.25.1"
 hume = "^0.4.1"
 
 [tool.poetry.dev-dependencies]

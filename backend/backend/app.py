@@ -2,18 +2,22 @@ from datetime import datetime
 import os
 import wave
 
-import json
 import cv2
 import numpy as np
 import openai
 import pyaudio
+from pathlib import Path
 import pygame
 from dotenv import load_dotenv
-from flask import Flask, Response, jsonify
+from flask import Flask, Response, jsonify, request
 from gtts import gTTS
 from hume import HumeBatchClient
-from hume.models.config import FaceConfig
 from hume.models.config import ProsodyConfig
+from openai import OpenAI
+
+load_dotenv()
+
+client = OpenAI()
 
 app = Flask(__name__)
 
@@ -38,11 +42,9 @@ def generate_frames():
         frame = buffer.tobytes()
         yield (b"--frame\r\n" b"Content-Type: image/jpeg\r\n\r\n" + frame + b"\r\n")
 
-
 @app.route("/video")
 def video():
     return Response(generate_frames(), mimetype="multipart/x-mixed-replace; boundary=frame")
-
 
 def postAudioHume():
 
@@ -76,38 +78,75 @@ def postAudioHume():
 
     return sorted_audio_emotions
 
-""" todo
-def imageHume(filepath):
+@app.route("/audio-input", methods=["POST"])
+def audio_input():
+    # Check if the request contains an audio file
+    if 'audio' not in request.files:
+        return jsonify({'error': 'No audio file in request'}), 400
 
-    client = HumeBatchClient(HUME_API_KEY)
-    filepaths = ["output.jpg"]
-    config = FaceConfig()
-    job = client.submit_job(None, [config], files=filepaths)
+    audio_file = request.files['audio']
+    selected_language = request.form.get('language', 'English')  # Default to English if not provided
 
-    print(job)
-    print("Running...")
+    print("Selected language:", selected_language)
 
-    details = job.await_complete()
+    # Save the uploaded audio file with its original filename
+    original_filename = audio_file.filename
+    if original_filename == '':
+        original_filename = 'uploaded_audio'
+    else:
+        original_filename = os.path.splitext(original_filename)[0]
+    uploaded_extension = os.path.splitext(audio_file.filename)[1] or '.webm'
+    uploaded_filename = f"{original_filename}{uploaded_extension}"
+    audio_file.save(uploaded_filename)
 
-    results = job.get_predictions()
+    # Send the audio file directly to the Whisper API for transcription
+    try:
+        # Send the audio file to Whisper API
+        transcript_response = client.audio.transcriptions.create(
+            model="whisper-1", 
+            language=None,
+            file=Path(uploaded_filename),
+            response_format="json"
+        )
+        transcript = transcript_response.text
+    except Exception as e:
+        print(f"Error transcribing audio: {e}")
+        return jsonify({'error': 'Failed to transcribe audio'}), 500
 
-    # Extract the top emotion
-    json_string = results.strip('[]')
-    json_object = json.loads(json_string)
+    # Translate the transcription into the selected language using OpenAI's GPT-3 or GPT-4
+    try:
+        # Use the Chat Completion API for better translation
+        completion = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {
+                    "role": "system",
+                    "content": f"You are a helpful assistant that translates text to {selected_language}. \
+Please provide the translation without any additional text."
+                },
+                {
+                    "role": "user",
+                    "content": transcript
+                }
+            ],
+            temperature=0.5,
+        )
+        translated_text = completion.choices[0].message.content.strip()
+        print("Translated Text:", translated_text)
+    except Exception as e:
+        print(f"Error translating text: {e}")
+        return jsonify({'error': 'Failed to translate text'}), 500
 
-    emotions = json_object['results']['predictions'][0]['models']['face']['grouped_predictions'][0]['predictions'][0]['emotions']
-
-    sorted_audio_emotions = sorted(emotions, key=lambda x: x['score'], reverse=True)
-
-    print("sorted emotions: ", sorted_audio_emotions)
-
-    return sorted_audio_emotions
-"""
-
+    # Return the translated text in the response
+    return jsonify({
+        'message': 'Audio file received, transcribed, and translated successfully',
+        'transcript': transcript,
+        'translated_text': translated_text,
+        'language': selected_language
+    }), 200
 
 @app.route("/process_audio", methods=["GET"])
 def process_audio():
-    load_dotenv()
     os.getenv("OPENAI_API_KEY")
 
     # Step 1: Play the help.wav audio
@@ -148,7 +187,7 @@ def process_audio():
     transcript = openai.Audio.transcribe("whisper-1", audio_file)["text"]
 
     # Step 4: Generate GPT-3 response
-    pre_prompt = f"""Act as a relief SPOT robot for a human in a disaster scenario Human:  {transcript}. reply in the language of the human. 
+    pre_prompt = f"""Act as a fire rescue SPOT robot for a human in a disaster scenario Human:  {transcript}. reply in the language of the human. 
 
     reassure the human that help is on its way, and that they are safe. state that images, voice, and geolocation data is being sent in real time to the rescue teams. 
 
